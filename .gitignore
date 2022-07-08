@@ -1,0 +1,10 @@
+*~
+.DS_Store
+.swp
+.vscode/
+client_secret.json
+default.profraw
+node_modules
+oauth2.keys.json
+old
+tmp
