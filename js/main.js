@@ -141,10 +141,31 @@ async function createSheet() {
       title: title,
     },
   }).then((response) => {
-    console.log('gapi response: ', response);
+    console.log('Created sheet. Response: ', response);
     document.getElementById('content').innerHTML =
       `<a href="${response.result.spreadsheetUrl}">${response.result.properties.title}</a>`;
+    writeDataToSheet(response.result.spreadsheetId);
   }).catch((error) => {
     console.error('Error creating sheet: ', error);
+  });
+}
+
+function writeDataToSheet(spreadsheetId) {
+  const values = [[1, 2, 3]];
+  const range = 'Sheet1'; // https://developers.google.com/sheets/api/guides/concepts#cell
+  const body = {
+    values: values,
+  };
+  gapi.client.sheets.spreadsheets.values.update({
+    spreadsheetId: spreadsheetId,
+    range: range,
+    // https://developers.google.com/sheets/api/reference/rest/v4/ValueInputOption
+    valueInputOption: 'USER_ENTERED',
+    resource: body,
+  }).then((response) => {
+    const result = response.result;
+    console.log(`${result.updatedCells} cells updated.`);
+  }).catch((error) => {
+    console.error('Error writing data to sheet: ', error.result.error.message);
   });
 }
