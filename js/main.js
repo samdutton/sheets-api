@@ -134,6 +134,30 @@ function handleSignoutClick() {
 //   document.getElementById('content').innerText = output;
 // }
 
+
+// spreadsheetId: 1UVnmXKJDXBcOY-QMiko1wMS9kFk9jsUitNlBVtR6KLg
+// function makeApiCall() {
+//      var params = {
+//        // The spreadsheet to request.
+//        spreadsheetId: 'my-spreadsheet-id',  // TODO: Update placeholder value.
+
+//        // The ranges to retrieve from the spreadsheet.
+//        ranges: [],  // TODO: Update placeholder value.
+
+//        // True if grid data should be returned.
+//        // This parameter is ignored if a field mask was set in the request.
+//        includeGridData: false,  // TODO: Update placeholder value.
+//      };
+
+//      var request = gapi.client.sheets.spreadsheets.get(params);
+//      request.then(function(response) {
+//        // TODO: Change code below to process the `response` object:
+//        console.log(response.result);
+//      }, function(reason) {
+//        console.error('error: ' + reason.result.error.message);
+//      });
+//    }
+
 async function createSheet() {
   const title = 'Author analytics';
   gapi.client.sheets.spreadsheets.create({
