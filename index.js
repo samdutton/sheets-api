@@ -1,33 +1,56 @@
 const {google} = require('googleapis');
 
-const publications = require('./data/publications.json');
-
-const spreadsheetData = publications.map((publication) => [publication.title, publication.authors]);
-console.log(spreadsheetData);
+const publicationsData = require('./data/publications.json');
+const publicationsDataWithoutAuthors = require('./data/publications-without-authors.json');
 
 const SPREADSHEET_ID = '1PUiirLMSiO2fJonbkVcrpzfpMXhH8vVlo5s6MxnL6u4';
+const RANGE = 'Publications!2:100000';
 
 async function authorise() {
+  let auth;
   try {
-    const auth = new google.auth.GoogleAuth({
+    auth = new google.auth.GoogleAuth({
       keyFile: 'keys.json',
       scopes: 'https://www.googleapis.com/auth/spreadsheets',
     });
-    const authClientObject = await auth.getClient();
-    const googleSheetsInstance = google.sheets({version: 'v4', auth: authClientObject});
-    setValue(googleSheetsInstance, auth);
   } catch (error) {
     console.error('>>> Auth error:', error);
   }
+  try {
+    const authClientObject = await auth.getClient();
+    const googleSheetsInstance = google.sheets({version: 'v4', auth: authClientObject});
+    const publicationsWithAuthors = publicationsData.map((publication) =>
+      [publication.title, publication.authors, publication.date, publication.updated, publication.url]);
+    updateSheet(googleSheetsInstance, auth, publicationsWithAuthors);
+    const publicationsWithoutAuthors = publicationsDataWithoutAuthors.map((publication) =>
+      [publication.title, publication.authors, publication.date, publication.updated, publication.url]);
+    // console.log(publicationsWithoutAuthors);
+    appendToSheet(googleSheetsInstance, auth, publicationsWithoutAuthors);
+  } catch (error) {
+    console.error('>>> Error adding data to sheet:', error);
+  }
 }
 
-async function setValue(googleSheetsInstance, auth) {
+async function updateSheet(googleSheetsInstance, auth, data, range) {
+  // console.log('>>>>', data);
   await googleSheetsInstance.spreadsheets.values.update({
     auth,
     spreadsheetId: SPREADSHEET_ID,
-    range: 'Sheet1',
+    range: RANGE,
     valueInputOption: 'USER_ENTERED',
-    resource: {values: spreadsheetData},
+    resource: {values: data},
+  });
+}
+
+async function appendToSheet(googleSheetsInstance, auth, data, range) {
+  // console.log('>>>>', data);
+  await googleSheetsInstance.spreadsheets.values.append({
+    auth,
+    spreadsheetId: SPREADSHEET_ID,
+    range: RANGE,
+    resource: {values: data},
+    valueInputOption: 'USER_ENTERED',
+    insertDataOption: 'INSERT_ROWS',
   });
 }
 
