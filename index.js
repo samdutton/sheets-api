@@ -1,18 +1,11 @@
-const express = require('express');
 const {google} = require('googleapis');
-const app = express();
-// app.set('view engine', 'ejs');
 
-const spreadsheetId = '1PUiirLMSiO2fJonbkVcrpzfpMXhH8vVlo5s6MxnL6u4';
+const publications = require('./data/publications.json');
 
-// app.post('/', async (req, res) => {
-//   const {request, name} = req.body;
-// });
+const spreadsheetData = publications.map((publication) => [publication.title, publication.authors]);
+console.log(spreadsheetData);
 
-const port = 3000;
-app.listen(port, ()=>{
-  console.log(`server started on ${port}`);
-});
+const SPREADSHEET_ID = '1PUiirLMSiO2fJonbkVcrpzfpMXhH8vVlo5s6MxnL6u4';
 
 async function authorise() {
   try {
@@ -21,22 +14,20 @@ async function authorise() {
       scopes: 'https://www.googleapis.com/auth/spreadsheets',
     });
     const authClientObject = await auth.getClient();
-    const googleSheetsInstance = google.sheets({version: 'v4', auth: authClientObject})
+    const googleSheetsInstance = google.sheets({version: 'v4', auth: authClientObject});
     setValue(googleSheetsInstance, auth);
   } catch (error) {
-    console.log('>>> Auth error', error);
+    console.error('>>> Auth error:', error);
   }
 }
 
 async function setValue(googleSheetsInstance, auth) {
   await googleSheetsInstance.spreadsheets.values.update({
     auth,
-    spreadsheetId,
+    spreadsheetId: SPREADSHEET_ID,
     range: 'Sheet1',
     valueInputOption: 'USER_ENTERED',
-    resource: {
-      values: [['Foofoo', 'Barbar'], ['bling', 'blong']],
-    },
+    resource: {values: spreadsheetData},
   });
 }
 
