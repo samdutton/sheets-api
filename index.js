@@ -1,78 +1,44 @@
-'use strict';
-
-// [START main_body]
-const {google} = require('googleapis');
 const express = require('express');
-const opn = require('open');
-const path = require('path');
-const fs = require('fs');
-
-const keyfile = path.join(__dirname, 'credentials.json');
-const keys = JSON.parse(fs.readFileSync(keyfile));
-const scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
-
-// Create an oAuth2 client to authorize the API call
-const client = new google.auth.OAuth2(
-  keys.web.client_id,
-  keys.web.client_secret,
-  keys.web.redirect_uris[0]);
-
-// Generate the url that will be used for authorization
-const authorizeUrl = client.generateAuthUrl({
-  access_type: 'offline',
-  scope: scopes,
-});
-
-// Open an http server to accept the oauth callback. In this
-// simple example, the only request to our webserver is to
-// /oauth2callback?code=<code>
+const {google} = require('googleapis');
 const app = express();
-app.get('/oauth2callback', (req, res) => {
-  const code = req.query.code;
-  client.getToken(code, (err, tokens) => {
-    if (err) {
-      console.error('Error getting oAuth tokens:');
-      throw err;
-    }
-    client.credentials = tokens;
-    res.send('Authentication successful! Please return to the console.');
-    server.close();
-    listMajors(client);
-  });
-});
-const server = app.listen(8080, () => {
-  // open the browser to the authorize url to start the workflow
-  opn(authorizeUrl, {wait: false});
+// app.set('view engine', 'ejs');
+
+const spreadsheetId = '1PUiirLMSiO2fJonbkVcrpzfpMXhH8vVlo5s6MxnL6u4';
+
+// app.post('/', async (req, res) => {
+//   const {request, name} = req.body;
+// });
+
+const port = 3000;
+app.listen(port, ()=>{
+  console.log(`server started on ${port}`);
 });
 
-/**
- * Print the names and majors of students in a sample spreadsheet:
- * https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
- */
-function listMajors(auth) {
-  const sheets = google.sheets('v4');
-  sheets.spreadsheets.values.get(
-    {
-      auth: auth,
-      spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
-      range: 'Class Data!A2:E',
-    },
-    (err, res) => {
-      if (err) {
-        console.error('The API returned an error.');
-        throw err;
-      }
-      const rows = res.data.values;
-      if (rows.length === 0) {
-        console.log('No data found.');
-      } else {
-        console.log('Name, Major:');
-        for (const row of rows) {
-          // Print columns A and E, which correspond to indices 0 and 4.
-          console.log(`${row[0]}, ${row[4]}`);
-        }
-      }
-    }
-  );
+async function authorise() {
+  try {
+    const auth = new google.auth.GoogleAuth({
+      keyFile: 'keys.json',
+      scopes: 'https://www.googleapis.com/auth/spreadsheets',
+    });
+    const authClientObject = await auth.getClient();
+    const googleSheetsInstance = google.sheets({version: 'v4', auth: authClientObject})
+    setValue(googleSheetsInstance, auth);
+  } catch (error) {
+    console.log('>>> Auth error', error);
+  }
 }
-// [END main_body]
+
+async function setValue(googleSheetsInstance, auth) {
+  await googleSheetsInstance.spreadsheets.values.update({
+    auth,
+    spreadsheetId,
+    range: 'Sheet1',
+    valueInputOption: 'USER_ENTERED',
+    resource: {
+      values: [['Foofoo', 'Barbar'], ['bling', 'blong']],
+    },
+  });
+}
+
+authorise();
+
