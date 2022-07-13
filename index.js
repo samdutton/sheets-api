@@ -19,9 +19,10 @@ async function authorise() {
   try {
     const authClientObject = await auth.getClient();
     const googleSheetsInstance = google.sheets({version: 'v4', auth: authClientObject});
+    clearSheet(googleSheetsInstance, auth);
     const publicationsWithAuthors = publicationsData.map((publication) =>
       [publication.title, publication.authors, publication.date, publication.updated, publication.url]);
-    updateSheet(googleSheetsInstance, auth, publicationsWithAuthors);
+    appendToSheet(googleSheetsInstance, auth, publicationsWithAuthors);
     const publicationsWithoutAuthors = publicationsDataWithoutAuthors.map((publication) =>
       [publication.title, publication.authors, publication.date, publication.updated, publication.url]);
     // console.log(publicationsWithoutAuthors);
@@ -29,17 +30,6 @@ async function authorise() {
   } catch (error) {
     console.error('>>> Error adding data to sheet:', error);
   }
-}
-
-async function updateSheet(googleSheetsInstance, auth, data, range) {
-  // console.log('>>>>', data);
-  await googleSheetsInstance.spreadsheets.values.update({
-    auth,
-    spreadsheetId: SPREADSHEET_ID,
-    range: RANGE,
-    valueInputOption: 'USER_ENTERED',
-    resource: {values: data},
-  });
 }
 
 async function appendToSheet(googleSheetsInstance, auth, data, range) {
@@ -53,6 +43,25 @@ async function appendToSheet(googleSheetsInstance, auth, data, range) {
     insertDataOption: 'INSERT_ROWS',
   });
 }
+
+async function clearSheet(googleSheetsInstance, auth) {
+  await googleSheetsInstance.spreadsheets.values.clear({
+    auth,
+    spreadsheetId: SPREADSHEET_ID,
+    range: RANGE,
+  });
+}
+
+// async function updateSheet(googleSheetsInstance, auth, data) {
+//   // console.log('>>>>', data);
+//   await googleSheetsInstance.spreadsheets.values.update({
+//     auth,
+//     spreadsheetId: SPREADSHEET_ID,
+//     range: RANGE,
+//     valueInputOption: 'USER_ENTERED',
+//     resource: {values: data},
+//   });
+// }
 
 authorise();
 
