@@ -5,6 +5,7 @@ const publicationsDataWithoutAuthors = require('./data/publications-without-auth
 
 const SPREADSHEET_ID = '1PUiirLMSiO2fJonbkVcrpzfpMXhH8vVlo5s6MxnL6u4';
 const RANGE = 'Publications!2:100000';
+const HEADER_ROW = [['Title', 'Authors', 'Date', 'Updated', 'URL']];
 
 async function authorise() {
   let auth;
@@ -22,6 +23,7 @@ async function authorise() {
     clearSheet(googleSheetsInstance, auth);
     const publicationsWithAuthors = publicationsData.map((publication) =>
       [publication.title, publication.authors, publication.date, publication.updated, publication.url]);
+    appendToSheet(googleSheetsInstance, auth, HEADER_ROW);
     appendToSheet(googleSheetsInstance, auth, publicationsWithAuthors);
     const publicationsWithoutAuthors = publicationsDataWithoutAuthors.map((publication) =>
       [publication.title, publication.authors, publication.date, publication.updated, publication.url]);
@@ -31,6 +33,34 @@ async function authorise() {
     console.error('>>> Error adding data to sheet:', error);
   }
 }
+
+const requests = [
+  {
+    'repeatCell': {
+      'range': {
+        'sheetId': 0,
+        'startRowIndex': 0,
+        'endRowIndex': 1,
+      },
+      'cell': {
+        'userEnteredFormat': {
+          'bold': true,
+        },
+      },
+    },
+    'fields': 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)',
+  }, {
+    'updateSheetProperties': {
+      'properties': {
+        'sheetId': 0,
+        'gridProperties': {
+          'frozenRowCount': 1,
+        },
+      },
+      'fields': 'gridProperties.frozenRowCount',
+    },
+  },
+];
 
 async function appendToSheet(googleSheetsInstance, auth, data, range) {
   // console.log('>>>>', data);
