@@ -4,8 +4,8 @@ const publicationsData = require('./data/publications.json');
 const publicationsDataWithoutAuthors = require('./data/publications-without-authors.json');
 
 const SPREADSHEET_ID = '1PUiirLMSiO2fJonbkVcrpzfpMXhH8vVlo5s6MxnL6u4';
-const RANGE = 'Publications!2:100000';
-const HEADER_ROW = [['Title', 'Authors', 'Date', 'Updated', 'URL']];
+const RANGE = 'Publications!2:10000';
+//  const HEADER_ROW = [['Title', 'Authors', 'Date', 'Updated', 'URL']];
 
 async function authorise() {
   let auth;
@@ -20,47 +20,53 @@ async function authorise() {
   try {
     const authClientObject = await auth.getClient();
     const googleSheetsInstance = google.sheets({version: 'v4', auth: authClientObject});
-    clearSheet(googleSheetsInstance, auth);
     const publicationsWithAuthors = publicationsData.map((publication) =>
-      [publication.title, publication.authors, publication.date, publication.updated, publication.url]);
-    appendToSheet(googleSheetsInstance, auth, HEADER_ROW);
-    appendToSheet(googleSheetsInstance, auth, publicationsWithAuthors);
+      [publication.title, publication.authors, publication.date, publication.updated,
+        createHyperlink(publication.url), createHyperlink(publication.github)]);
+    // appendToSheet(googleSheetsInstance, auth, HEADER_ROW);
     const publicationsWithoutAuthors = publicationsDataWithoutAuthors.map((publication) =>
-      [publication.title, publication.authors, publication.date, publication.updated, publication.url]);
+      [publication.title, publication.authors, publication.date, publication.updated,
+        createHyperlink(publication.url), createHyperlink(publication.github)]);
     // console.log(publicationsWithoutAuthors);
+    await clearSheet(googleSheetsInstance, auth);
+    await updateSheet(googleSheetsInstance, auth, publicationsWithAuthors);
     appendToSheet(googleSheetsInstance, auth, publicationsWithoutAuthors);
   } catch (error) {
     console.error('>>> Error adding data to sheet:', error);
   }
 }
 
-const requests = [
-  {
-    'repeatCell': {
-      'range': {
-        'sheetId': 0,
-        'startRowIndex': 0,
-        'endRowIndex': 1,
-      },
-      'cell': {
-        'userEnteredFormat': {
-          'bold': true,
-        },
-      },
-    },
-    'fields': 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)',
-  }, {
-    'updateSheetProperties': {
-      'properties': {
-        'sheetId': 0,
-        'gridProperties': {
-          'frozenRowCount': 1,
-        },
-      },
-      'fields': 'gridProperties.frozenRowCount',
-    },
-  },
-];
+function createHyperlink(url) {
+  return `=HYPERLINK("${url}"`;
+}
+
+// const requests = [
+//   {
+//     'repeatCell': {
+//       'range': {
+//         'sheetId': 0,
+//         'startRowIndex': 0,
+//         'endRowIndex': 1,
+//       },
+//       'cell': {
+//         'userEnteredFormat': {
+//           'bold': true,
+//         },
+//       },
+//     },
+//     'fields': 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)',
+//   }, {
+//     'updateSheetProperties': {
+//       'properties': {
+//         'sheetId': 0,
+//         'gridProperties': {
+//           'frozenRowCount': 1,
+//         },
+//       },
+//       'fields': 'gridProperties.frozenRowCount',
+//     },
+//   },
+// ];
 
 async function appendToSheet(googleSheetsInstance, auth, data, range) {
   // console.log('>>>>', data);
@@ -82,16 +88,16 @@ async function clearSheet(googleSheetsInstance, auth) {
   });
 }
 
-// async function updateSheet(googleSheetsInstance, auth, data) {
-//   // console.log('>>>>', data);
-//   await googleSheetsInstance.spreadsheets.values.update({
-//     auth,
-//     spreadsheetId: SPREADSHEET_ID,
-//     range: RANGE,
-//     valueInputOption: 'USER_ENTERED',
-//     resource: {values: data},
-//   });
-// }
+async function updateSheet(googleSheetsInstance, auth, data) {
+  // console.log('>>>>', data);
+  await googleSheetsInstance.spreadsheets.values.update({
+    auth,
+    spreadsheetId: SPREADSHEET_ID,
+    range: RANGE,
+    valueInputOption: 'USER_ENTERED',
+    resource: {values: data},
+  });
+}
 
 authorise();
 
