@@ -19,6 +19,7 @@ async function authorise() {
   try {
     const authClientObject = await auth.getClient();
     const googleSheetsInstance = google.sheets({version: 'v4', auth: authClientObject});
+    console.log(`Processing ${numPublications} publications.`);
     publications = publications.map((publication) =>
       [publication.title, publication.authors, publication.date, publication.updated,
         publication.pageViews, publication.uniqueViews, publication.averageTimeOnPage,
@@ -27,6 +28,7 @@ async function authorise() {
     // appendToSheet(googleSheetsInstance, auth, HEADER_ROW);
     await clearSheet(googleSheetsInstance, auth, range);
     await updateSheet(googleSheetsInstance, auth, publications, range);
+    console.log(`Updated sheet at https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}.`);
   } catch (error) {
     console.error('>>> Error adding data to sheet:', error);
   }
