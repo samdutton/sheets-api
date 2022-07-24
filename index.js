@@ -1,71 +1,72 @@
-const csv = require('csvtojson'); // https://www.npmjs.com/package/csvtojson
-const glob = require('glob');
-const fs = require('fs');
+const {google} = require('googleapis');
 
-const publications = require('./data/publications.json');
+const SPREADSHEET_ID = '1PUiirLMSiO2fJonbkVcrpzfpMXhH8vVlo5s6MxnL6u4';
+//  const HEADER_ROW = [['Title', 'Authors', 'Date', 'Updated', 'URL']];
 
-const JSON_FILE_PATH = 'data/analytics-export.json';
+async function authorise() {
+  let publications = require('./data/publications.json');
+  const numPublications = publications.length;
+  const range = `Publications!2:${numPublications + 1}`;
+  let auth;
+  try {
+    auth = new google.auth.GoogleAuth({
+      keyFile: 'keys.json',
+      scopes: 'https://www.googleapis.com/auth/spreadsheets',
+    });
+  } catch (error) {
+    console.error('>>> Auth error:', error);
+  }
+  try {
+    const authClientObject = await auth.getClient();
+    const googleSheetsInstance = google.sheets({version: 'v4', auth: authClientObject});
+    console.log(`Processing ${numPublications} publications.`);
+    publications = publications.map((publication) =>
+      [publication.title, publication.authors, publication.date, publication.updated,
+        publication.pageViews, publication.uniqueViews, publication.averageTimeOnPage,
+        publication.entrances, publication.bounceRate, publication.percentExit,
+        createHyperlink(publication.url), createHyperlink(publication.github)]);
+    // appendToSheet(googleSheetsInstance, auth, HEADER_ROW);
+    await clearSheet(googleSheetsInstance, auth, range);
+    await updateSheet(googleSheetsInstance, auth, publications, range);
+    console.log(`Updated sheet at https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}.`);
+  } catch (error) {
+    console.error('>>> Error adding data to sheet:', error);
+  }
+}
 
-let analyticsData = [];
-let numFilepathsProcessed = 0;
+function createHyperlink(url) {
+  return `=HYPERLINK("${url}","${url.replace('https://', '')}")`;
+}
 
-const HEADERS = ['page', 'pageViews', 'uniqueViews', 'averageTimeOnPage', 'entrances',
-  'bounceRate', 'percentExit', 'pageValue'];
+// async function appendToSheet(googleSheetsInstance, auth, data, range) {
+//   // console.log('>>>>', data);
+//   await googleSheetsInstance.spreadsheets.values.append({
+//     auth,
+//     spreadsheetId: SPREADSHEET_ID,
+//     range: RANGE,
+//     resource: {values: data},
+//     valueInputOption: 'USER_ENTERED',
+//     insertDataOption: 'INSERT_ROWS',
+//   });
+// }
 
-// 1. Get paths for all CSV files in the data directory.
-// 2. Foe each path, convert CSV to JSON, and add that JSON to the analyticsData array.
-// 3. When complete, write analyticsData to a file.
-function getConvertWrite() {
-  glob('./data/*.csv', {}, (error, filepaths) => {
-    if (error) {
-      console.error('Error getting paths or CSV files:', error);
-    } else {
-      const numFilepaths = filepaths.length;
-      console.log(`Found ${numFilepaths} CSV files.\n`);
-      try {
-        for (const filepath of filepaths) {
-          csvToJson(filepath).then((jsonArray) => {
-            // First five rows (items in array) from Google Analytics export are info and headers.
-            analyticsData = analyticsData.concat(jsonArray.slice(5));
-            numFilepathsProcessed++;
-            if (numFilepathsProcessed === filepaths.length) {
-              fs.writeFile(JSON_FILE_PATH, JSON.stringify(analyticsData, null, 2), () => {
-                console.log(`\nWrote analytics export data for ${analyticsData.length} items to ${JSON_FILE_PATH}\n`);
-              });
-              addAnalyticsDataToPublications();
-            }
-          });
-        }
-      } catch (error) {
-        console.log('Error converting CSV to JSON for filepath', error);
-      }
-    }
+async function clearSheet(googleSheetsInstance, auth, range) {
+  await googleSheetsInstance.spreadsheets.values.clear({
+    auth,
+    spreadsheetId: SPREADSHEET_ID,
+    range: range,
   });
 }
 
-async function csvToJson(filepath) {
-  try {
-    const json = await csv({headers: HEADERS}).fromFile(filepath);
-    console.log(`Converted CSV data from ${filepath} to JSON.`);
-    return json;
-  } catch (error) {
-    console.error(`Error parsing CSV from ${filepath}: `, error);
-  }
+async function updateSheet(googleSheetsInstance, auth, data, range) {
+  await googleSheetsInstance.spreadsheets.values.update({
+    auth,
+    spreadsheetId: SPREADSHEET_ID,
+    range: range,
+    valueInputOption: 'USER_ENTERED',
+    resource: {values: data},
+  });
 }
 
-// Add analytics data to publications data.
-function addAnalyticsDataToPublications() {
-  try {
-    for (let publication of publications) {
-      const analyticsItem = analyticsData.find((item) => item.page === publication.page);
-      publication = Object.assign(publication, analyticsItem);
-    }
-    fs.writeFile('data/publications.json', JSON.stringify(publications, null, 2), () => {
-      console.log('Wrote data/publications.json');
-    });
-  } catch (error) {
-    console.log('Error adding analytics data to publication data', error);
-  }
-}
+authorise();
 
-getConvertWrite();
