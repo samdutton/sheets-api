@@ -1,12 +1,13 @@
 const {google} = require('googleapis');
 
-const SPREADSHEET_ID = '1PUiirLMSiO2fJonbkVcrpzfpMXhH8vVlo5s6MxnL6u4';
+// const SPREADSHEET_ID = '1PUiirLMSiO2fJonbkVcrpzfpMXhH8vVlo5s6MxnL6u4'; // actual
+const SPREADSHEET_ID = '1zgjG5ZSyrV_0274UV1jcnd7yzHybuupOy0v76qpkibE'; // test
 //  const HEADER_ROW = [['Title', 'Authors', 'Date', 'Updated', 'URL']];
 
 async function authorise() {
-  let publications = require('./data/publications.json');
+  let publications = require('../data/publications.json');
   const numPublications = publications.length;
-  const range = `Publications!2:${numPublications + 1}`;
+  const range = `Publications!3:${numPublications + 1}`;
   let auth;
   try {
     auth = new google.auth.GoogleAuth({
