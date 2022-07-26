@@ -7,7 +7,8 @@ const SPREADSHEET_ID = '1zgjG5ZSyrV_0274UV1jcnd7yzHybuupOy0v76qpkibE'; // test
 async function authorise() {
   let publications = require('../data/publications.json');
   const numPublications = publications.length;
-  const range = `Publications!3:${numPublications + 1}`;
+  const range = `Publications!4:${numPublications + 4}`;
+  console.log('>>> ', range);
   let auth;
   try {
     auth = new google.auth.GoogleAuth({
@@ -27,7 +28,7 @@ async function authorise() {
         publication.entrances, publication.bounceRate, publication.percentExit,
         createHyperlink(publication.url), createHyperlink(publication.github)]);
     // appendToSheet(googleSheetsInstance, auth, HEADER_ROW);
-    await clearSheet(googleSheetsInstance, auth, range);
+    // await clearSheet(googleSheetsInstance, auth, range);
     await updateSheet(googleSheetsInstance, auth, publications, range);
     console.log(`Updated sheet at https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}.`);
   } catch (error) {
